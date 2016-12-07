@@ -1,0 +1,18 @@
+PODS:
+  - Alamofire (4.0.1)
+  - ObjectMapper (2.2.0)
+  - SwiftLocation (1.1.0)
+
+DEPENDENCIES:
+  - Alamofire (~> 4.0)
+  - ObjectMapper (~> 2.2)
+  - SwiftLocation (>= 1.0.6)
+
+SPEC CHECKSUMS:
+  Alamofire: 7682d43245de14874acd142ec137b144aa1dd335
+  ObjectMapper: 4060d739febae11ab0c6af8d786f98667c82e1bd
+  SwiftLocation: f1bf5acb7992dd96c6f773c383f9c0479f07727d
+
+PODFILE CHECKSUM: 6f0730d217a300435f75c8f92eb97a54d5254a09
+
+COCOAPODS: 1.2.0.beta.1

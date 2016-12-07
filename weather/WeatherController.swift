@@ -116,6 +116,7 @@ class WeatherController: UIViewController, CLLocationManagerDelegate {
     }
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+////        Old method
 ////        let vc = storyboard?.instantiateViewController(withIdentifier: "toto") as WeatherDetailController
 ////        self.navigationController?.pushViewController(vc, animated: true)
    

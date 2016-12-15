@@ -11,6 +11,7 @@ import UIKit
 
 class WeatherDetailFirstCell: UITableViewCell {
     @IBOutlet weak var cityLabel: UILabel!
+    @IBOutlet weak var weatherIcon: UIImageView!
     @IBOutlet weak var temperatureLabel: UILabel!
     @IBOutlet weak var summaryLabel: UILabel!
     @IBOutlet weak var hourByHourLabel: UILabel!

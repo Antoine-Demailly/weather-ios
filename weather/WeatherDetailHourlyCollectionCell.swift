@@ -10,7 +10,9 @@ import Foundation
 import UIKit
 
 class WeatherDetailHourlyCollectionCell: UICollectionViewCell {
-    static let identifier = "WeatherDetailHourlyCellIdentifier"
+    static let identifier = "WeatherDetailHourlyCollectionCellIdentifier"
+    @IBOutlet weak var temperatureLabel: UILabel!
+    @IBOutlet weak var hourLabel: UILabel!
     
     override func awakeFromNib() {
         self.backgroundColor = UIColor.clear

@@ -11,4 +11,9 @@ import UIKit
 
 class WeatherDetailInfoCell: UITableViewCell {
     static let identifier = "WeatherDetailInfoCellIdentifier"
+    
+    override func awakeFromNib() {
+        self.backgroundColor = UIColor.clear
+        self.tintColor = UIColor.white
+    }
 }

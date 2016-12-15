@@ -11,7 +11,9 @@ import Alamofire
 import SwiftLocation
 import CoreLocation
 
-typealias WeatherArray = Array<Dictionary<String, Any>>
+typealias WeatherDailyData = Array<Dictionary<String, Any>>
+typealias WeatherHourlyData = Array<Dictionary<String, Any>>
+typealias WeatherResponse = Dictionary<String, Any>
 
 /// Request Manager to make HTTP Calls to weather server
 class RequestManager {
@@ -20,7 +22,7 @@ class RequestManager {
     private let apiKey = "d5713078b87ac92980fd145dde009d50"
     private let host = "https://api.darksky.net/forecast"
     
-    func fetchWeather(coordinates: CLLocationCoordinate2D, onSuccess success: @escaping (WeatherArray) -> Void, onError error: @escaping (String) -> Void) {
+    func fetchWeather(coordinates: CLLocationCoordinate2D, onSuccess success: @escaping (WeatherResponse) -> Void, onError error: @escaping (String) -> Void) {
         var strRequest = "\(host)/\(apiKey)/"
         strRequest += "\(coordinates.latitude),\(coordinates.longitude)"
         
@@ -37,13 +39,13 @@ class RequestManager {
                     return
                 }
                 
-                guard let daily = JSON["daily"] as? Dictionary<String, Any>,
-                    let dailyData = daily["data"] as? WeatherArray else {
-                        error("Request Manager -> Can not map from \(strRequest)")
-                        return
-                }
+                //guard let daily = JSON["daily"] as? Dictionary<String, Any>,
+                //    let dailyData = daily["data"] as? WeatherArray else {
+                //        error("Request Manager -> Can not map from \(strRequest)")
+                //        return
+                //}
                 
-                success(dailyData)
+                success(JSON)
         }
     }
 }

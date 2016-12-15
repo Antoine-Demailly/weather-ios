@@ -14,9 +14,14 @@ import CoreLocation
 class WeatherController: UIViewController, CLLocationManagerDelegate {
     
     @IBOutlet weak var tableView: WeatherTableView!
-    var resultWeather: WeatherArray?
-    var refreshControl: UIRefreshControl!
+    
+    var currentCoordinates: CLLocationCoordinate2D?
     var locationManager: CLLocationManager!
+    var refreshControl: UIRefreshControl!
+    var dailyWeather: WeatherDailyData?
+    var hourlyWeather: WeatherHourlyData?
+    var currentlyWeather: Dictionary<String, Any>?
+    
     static var city: String = "Inconnu"
     
     enum Days: Int {
@@ -44,18 +49,21 @@ class WeatherController: UIViewController, CLLocationManagerDelegate {
         self.navigationController?.navigationBar.titleTextAttributes = [NSForegroundColorAttributeName: UIColor.white]
 
         // Background dégradé
-        let colors = GradientColors()
-        self.view.backgroundColor = UIColor.clear
-        let backgroundLayer = colors.gl
-        backgroundLayer.frame = self.view.frame
-        self.view.layer.insertSublayer(backgroundLayer, at: 0)
-
+        //let colors = GradientColors()
+        //self.view.backgroundColor = UIColor.clear
+        //let backgroundLayer = colors.gl
+        //backgroundLayer.frame = self.view.frame
+        //self.view.layer.insertSublayer(backgroundLayer, at: 0)
+        
+        setBackground(icon: "loading")
+        
         // define pull to refresh
         self.setPullToRefresh()
         
         locationManager = CLLocationManager()
         locationManager.delegate = self
         locationManager.requestAlwaysAuthorization()
+
         
         _ = Location.getLocation(withAccuracy: .block, onSuccess: { foundLocation in
             let coordinates = foundLocation.coordinate
@@ -63,7 +71,9 @@ class WeatherController: UIViewController, CLLocationManagerDelegate {
             _ = Location.reverse(coordinates: coordinates, onSuccess: { foundPlacemark in
                 WeatherController.city = foundPlacemark.locality ?? "Inconnu"
                 
-                self.fetchWeather(coordinates: coordinates)
+                self.currentCoordinates = coordinates
+                self.fetchWeather(coordinates: coordinates) {}
+
             }) { error in
                 // failed to reverse geocoding due to an error
             }
@@ -79,10 +89,25 @@ class WeatherController: UIViewController, CLLocationManagerDelegate {
         }
     }
     
-    func fetchWeather(coordinates: CLLocationCoordinate2D) {
+    func setBackground(icon: String) {
+        self.view.backgroundColor = UIColor(patternImage: UIImage(named:"\(icon)-background")!)
+    }
+    
+    func fetchWeather(coordinates: CLLocationCoordinate2D, onSuccess: @escaping () -> Void) {
         RequestManager.sharedInstance.fetchWeather(coordinates: coordinates, onSuccess: { (result) in
-            self.resultWeather = result
-            self.reload()
+            if let daily = result["daily"] as? Dictionary<String, Any>,
+               let dailyData = daily["data"] as? WeatherDailyData,
+               let hourly = result["hourly"] as? Dictionary<String, Any>,
+               let hourlyData = hourly["data"] as? WeatherHourlyData,
+               let currently = result["currently"] as? Dictionary<String, Any> {
+                self.dailyWeather = dailyData
+                self.hourlyWeather = hourlyData
+                self.currentlyWeather = currently
+                
+                onSuccess()
+                self.reload()
+            }
+            
         }) { (error) in
             print("Error => \(error)")
         }
@@ -104,22 +129,23 @@ class WeatherController: UIViewController, CLLocationManagerDelegate {
     }
     
     func reload() {
+        let icon = self.currentlyWeather?["icon"] as? String ?? "clear-day"
+        setBackground(icon: icon)
+
         self.tableView.reloadData()
     }
     
     func onPullToRefresh(sender:AnyObject) {
-        // Code to refresh table view
-        print("Refresh")
-        refreshControl.endRefreshing()
-//        self.fetchWeather()
+        if let coordinates = self.currentCoordinates {
+            self.fetchWeather(coordinates: coordinates) {
+                self.refreshControl.endRefreshing()
+            }
+        }
+
         return
     }
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-////        Old method
-////        let vc = storyboard?.instantiateViewController(withIdentifier: "toto") as WeatherDetailController
-////        self.navigationController?.pushViewController(vc, animated: true)
-   
         if segue.identifier == "weatherDetail", let forecast = sender as? [String:Any]  {
             if let vc = segue.destination as? WeatherDetailController {
                 vc.city = WeatherController.city
@@ -131,19 +157,25 @@ class WeatherController: UIViewController, CLLocationManagerDelegate {
 
 extension WeatherController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        self.performSegue(withIdentifier: "weatherDetail", sender: self.resultWeather?[indexPath.row])
+        var data: Dictionary<String, Any> = [:]
+
+        data["daily"] = self.dailyWeather?[indexPath.row]
+
+        if indexPath.row == 0 {
+            data["isCurrentDay"] = true
+            data["hourly"] = self.hourlyWeather
+            data["currently"] = self.currentlyWeather
+        }
+
+        self.performSegue(withIdentifier: "weatherDetail", sender: data)
     }
     
     func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
         if indexPath.row == 0, let cell = cell as? WeatherFirstCell {
-            guard let objWeather = self.resultWeather?[indexPath.row],
-                let summary = objWeather["summary"] as? String,
-                let temperatureMin = objWeather["temperatureMin"] as? Int,
-                let temperatureMax = objWeather["temperatureMax"] as? Int else {
+            guard let temperature = self.currentlyWeather?["temperature"] as? Int,
+                let summary = self.currentlyWeather?["summary"] as? String else {
                 return
             }
-            
-            let temperature = (temperatureMax + temperatureMin) / 2
             
             cell.cityLabel.text = WeatherController.city
             cell.temperatureLabel.text = "\(temperature)°"
@@ -151,7 +183,7 @@ extension WeatherController: UITableViewDelegate {
         } else {
             let cell = cell as? WeatherCell
             
-            guard let objWeather = self.resultWeather?[indexPath.row],
+            guard let objWeather = self.dailyWeather?[indexPath.row],
                 let time = objWeather["time"] as? Int,
                 let temperatureMin = objWeather["temperatureMin"] as? Int,
                 let temperatureMax = objWeather["temperatureMax"] as? Int else {
@@ -189,7 +221,7 @@ extension WeatherController: UITableViewDataSource {
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return resultWeather?.count ?? 0
+        return dailyWeather?.count ?? 0
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
